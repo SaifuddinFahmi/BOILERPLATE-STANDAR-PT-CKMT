@@ -1,0 +1,121 @@
+/**
+ * LIB_CKMT_CONFIG v1.0.0
+ * Konfigurasi terpusat per project
+ */
+var CKMTConfig = (function() {
+  'use strict';
+
+  const SHEET = 'DB_Pengaturan';
+  const CACHE_KEY = 'CKMT_CONFIG_CACHE';
+
+  const DEFAULTS = {
+    // Branding
+    companyName:     'PT. CIPTA KARYA MULTI TEKNIK',
+    companyShort:    'PT CKMT',
+    companySubtitle: 'General Contractor & Supplier',
+    companyAddress:  'Jl. Ketintang Madya Cempaka No. 59 Surabaya',
+    logoUrl:         '',
+    // Project
+    projectName:     'Default Project',
+    projectLocation: 'Indonesia',
+    // Tax
+    pphRate:         '2.65',
+    ppnRate:         '11',
+    retensiRate:     '5',
+    // Feature Flags (per project bisa beda)
+    feature_opname:  'YA',
+    feature_foto:    'YA',
+    feature_kwitansi:'YA',
+    feature_invoice: 'YA',
+    feature_export:  'YA',
+    // Security
+    sessionTimeout:  '3600',
+    maxLoginAttempt: '5',
+    // Versioning
+    schemaVersion:   '1.0.0'
+  };
+
+  function _ss() { return SpreadsheetApp.getActiveSpreadsheet(); }
+
+  function _sheet() {
+    const ss = _ss();
+    let sh = ss.getSheetByName(SHEET);
+    if (!sh) {
+      sh = ss.insertSheet(SHEET);
+      sh.appendRow(['Key','Value','Keterangan','Updated']);
+      sh.getRange(1,1,1,4).setFontWeight('bold')
+        .setBackground('#1E293B').setFontColor('#fff');
+      sh.setFrozenRows(1);
+      // Seed defaults
+      Object.keys(DEFAULTS).forEach(function(k){
+        sh.appendRow([k, DEFAULTS[k], '', new Date()]);
+      });
+    }
+    return sh;
+  }
+
+  /**
+   * Ambil semua config (with cache)
+   */
+  function getAll(forceReload) {
+    if (!forceReload) {
+      const cached = CacheService.getScriptCache().get(CACHE_KEY);
+      if (cached) {
+        try { return JSON.parse(cached); } catch(e){}
+      }
+    }
+    const sh = _sheet();
+    const data = sh.getDataRange().getValues();
+    const out = Object.assign({}, DEFAULTS);
+    for (let i = 1; i < data.length; i++) {
+      const k = String(data[i][0] || '').trim();
+      const v = data[i][1];
+      if (k && v !== '' && v != null) out[k] = String(v);
+    }
+    try {
+      CacheService.getScriptCache().put(CACHE_KEY, JSON.stringify(out), 300);
+    } catch(e){}
+    return out;
+  }
+
+  function get(key, fallback) {
+    const cfg = getAll();
+    return (cfg[key] !== undefined) ? cfg[key] : (fallback || DEFAULTS[key] || '');
+  }
+
+  /**
+   * Set 1 key
+   */
+  function set(key, value) {
+    const sh = _sheet();
+    const data = sh.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === key) {
+        sh.getRange(i+1, 2).setValue(value);
+        sh.getRange(i+1, 4).setValue(new Date());
+        _bustCache();
+        return true;
+      }
+    }
+    sh.appendRow([key, value, '', new Date()]);
+    _bustCache();
+    return true;
+  }
+
+  function setMany(obj, user) {
+    Object.keys(obj).forEach(function(k){
+      set(k, obj[k]);
+    });
+    if (user) CKMTAuth.log(user, 'CONFIG_UPDATE', JSON.stringify(Object.keys(obj)));
+  }
+
+  function isEnabled(featureKey) {
+    return String(get(featureKey, 'TIDAK')).toUpperCase() === 'YA';
+  }
+
+  function _bustCache() {
+    try { CacheService.getScriptCache().remove(CACHE_KEY); } catch(e){}
+  }
+
+  return { getAll, get, set, setMany, isEnabled, DEFAULTS, bustCache: _bustCache };
+})();
