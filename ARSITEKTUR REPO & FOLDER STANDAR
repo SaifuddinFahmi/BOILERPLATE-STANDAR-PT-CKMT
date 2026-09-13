@@ -1,0 +1,48 @@
+ckmt-apps-boilerplate/                    (Repo GitHub perusahaan)
+│
+├── 📁 _library/                          → SCRIPT LIBRARY (dipublikasikan sekali)
+│   ├── appsscript.json
+│   ├── 01_LibAuth.gs                    → Login, RBAC, Audit
+│   ├── 02_LibConfig.gs                  → Feature flags, settings
+│   ├── 03_LibSheet.gs                   → CRUD sheet, ensureSheet
+│   ├── 04_LibFormat.gs                  → num_, date_, formatRp_, terbilang
+│   ├── 05_LibPrint.gs                   → Auto-scale print, PDF
+│   ├── 06_LibUI.gs                      → doGet wrapper, menu builder
+│   ├── 07_LibAudit.gs                   → Log perubahan
+│   ├── 08_LibNotify.gs                  → Email/WA notifikasi
+│   └── 09_LibMigration.gs               → Schema versioning
+│
+├── 📁 _templates/                        → TEMPLATE PROJECT
+│   ├── 📁 template-opname/
+│   │   ├── appsscript.json
+│   │   ├── Code.gs                      → Entry point + import library
+│   │   ├── Index.html                   → UI (dari Index lama, dipertahankan)
+│   │   ├── Styles.html                  → CSS (dari Index lama)
+│   │   ├── JavaScript.html              → Client-side JS
+│   │   └── BusinessLogic.gs             → Fungsi khas opname
+│   │
+│   ├── 📁 template-foto/
+│   │   ├── appsscript.json
+│   │   ├── Code.gs
+│   │   ├── Index.html
+│   │   ├── Styles.html
+│   │   ├── JavaScript.html
+│   │   └── PhotoLogic.gs
+│   │
+│   └── 📁 template-generic/             → Untuk proyek baru non-spesifik
+│
+├── 📁 _scripts/                          → TOOLING
+│   ├── setup.sh                         → Setup clasp + git di lokal
+│   ├── deploy.sh                        → Deploy ke prod
+│   ├── new-project.sh                   → Generate project baru dari template
+│   └── sync-library.sh                  → Update library ke semua project
+│
+├── 📁 _docs/
+│   ├── SECURITY.md
+│   ├── DEPLOYMENT.md
+│   ├── CHANGELOG.md
+│   └── ONBOARDING.md
+│
+├── .clasp.json
+├── .gitignore
+└── README.md
