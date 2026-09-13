@@ -1,0 +1,114 @@
+/**
+ * LIB_CKMT_AUTH v1.0.0
+ * Standar autentikasi & RBAC PT CKMT
+ */
+var CKMTAuth = (function() {
+  'use strict';
+
+  const CACHE_TTL = 300; // 5 menit
+  const AUDIT_SHEET = 'Lib_Audit_Log';
+
+  // RBAC Matrix — konsisten di semua project
+  const ROLES = {
+    superadmin: ['*'],
+    admin:      ['read','write','delete','export','manage_users','print'],
+    manager:    ['read','write','export','print'],
+    operator:   ['read','write','print'],
+    viewer:     ['read','print']
+  };
+
+  function _ss() { return SpreadsheetApp.getActiveSpreadsheet(); }
+
+  function _ensureSheet(name, headers) {
+    const ss = _ss();
+    let sh = ss.getSheetByName(name);
+    if (!sh) {
+      sh = ss.insertSheet(name);
+      sh.appendRow(headers);
+      sh.getRange(1,1,1,headers.length)
+        .setFontWeight('bold').setBackground('#1E293B').setFontColor('#fff');
+      sh.setFrozenRows(1);
+    }
+    return sh;
+  }
+
+  /**
+   * Login universal — kompatibel dengan DB_User (Opname) & Users (Foto)
+   */
+  function login(username, pin, opts) {
+    opts = opts || {};
+    const sheetName = opts.sheetName || 'DB_User';
+    const headers   = opts.headers || ['Username','PIN','Role','Nama','Aktif'];
+    const colUser   = opts.colUser   != null ? opts.colUser   : 0;
+    const colPin    = opts.colPin    != null ? opts.colPin    : 1;
+    const colRole   = opts.colRole   != null ? opts.colRole   : 2;
+    const colNama   = opts.colNama   != null ? opts.colNama   : 3;
+    const colAktif  = opts.colAktif  != null ? opts.colAktif  : -1; // -1 = skip cek aktif
+
+    try {
+      const sh = _ensureSheet(sheetName, headers);
+      const data = sh.getDataRange().getValues();
+      const uLower = String(username || '').toLowerCase();
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (String(row[colUser]).toLowerCase() === uLower &&
+            String(row[colPin])  === String(pin)) {
+          if (colAktif >= 0 && String(row[colAktif]).toUpperCase() === 'TIDAK') {
+            return { success: false, message: 'Akun dinonaktifkan.' };
+          }
+          const user = {
+            username: row[colUser],
+            role:     String(row[colRole] || 'viewer').toLowerCase(),
+            nama:     row[colNama] || row[colUser]
+          };
+          logAudit_(user, 'LOGIN', 'via ' + sheetName);
+          return { success: true, user: user };
+        }
+      }
+      return { success: false, message: 'Username atau PIN salah.' };
+    } catch (e) {
+      return { success: false, message: 'Auth error: ' + e.message };
+    }
+  }
+
+  /**
+   * Cek permission
+   */
+  function can(user, action) {
+    if (!user || !user.role) return false;
+    const perms = ROLES[user.role] || [];
+    return perms.indexOf('*') >= 0 || perms.indexOf(action) >= 0;
+  }
+
+  /**
+   * Guard — lempar error jika tidak punya akses
+   */
+  function guard(user, action) {
+    if (!can(user, action)) {
+      throw new Error('Akses ditolak: butuh permission "' + action + '".');
+    }
+    return true;
+  }
+
+  /**
+   * Audit log terpusat
+   */
+  function logAudit_(user, action, detail) {
+    try {
+      const sh = _ensureSheet(AUDIT_SHEET,
+        ['Timestamp','User','Role','Action','Detail','Project']);
+      sh.appendRow([
+        new Date(),
+        (user && user.username) || 'system',
+        (user && user.role)     || '-',
+        action,
+        detail || '',
+        (PropertiesService.getScriptProperties().getProperty('PROJECT_CODE') || '-')
+      ]);
+    } catch (e) { /* silent */ }
+  }
+
+  function log(user, action, detail) { logAudit_(user, action, detail); }
+
+  return { login, can, guard, log, ROLES };
+})();
