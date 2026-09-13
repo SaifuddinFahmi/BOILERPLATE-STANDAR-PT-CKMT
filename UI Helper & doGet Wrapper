@@ -1,0 +1,30 @@
+/**
+ * LIB_CKMT_UI v1.0.0
+ * Wrapper doGet standar + helper UI
+ */
+var CKMTUI = (function() {
+  'use strict';
+
+  const DEFAULT_TITLE = 'PT CKMT — Sistem Terpadu';
+
+  function serveApp(htmlFile, opts) {
+    opts = opts || {};
+    const cfg = CKMTConfig.getAll();
+    const t = HtmlService.createTemplateFromFile(htmlFile);
+    t.CONFIG = cfg;              // inject config ke template
+    t.VERSION = opts.version || '1.0.0';
+    return t.evaluate()
+      .setTitle(opts.title || (cfg.companyName + ' — ' + DEFAULT_TITLE))
+      .addMetaTag('viewport',
+        'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover')
+      .setXFrameOptionsMode(
+        opts.allowAll ? HtmlService.XFrameOptionsMode.ALLOWALL
+                      : HtmlService.XFrameOptionsMode.DEFAULT);
+  }
+
+  function include(filename) {
+    return HtmlService.createHtmlOutputFromFile(filename).getContent();
+  }
+
+  return { serveApp, include };
+})();
