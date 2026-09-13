@@ -1,0 +1,25 @@
+/**
+ * LIB_CKMT_PRINT v1.0.0
+ * Wrapper print + PDF export
+ */
+var CKMTPrint = (function() {
+  'use strict';
+
+  function toPdf(htmlOutput, filename) {
+    const blob = htmlOutput.getBlob()
+      .getAs(MimeType.PDF)
+      .setName(filename || ('Export_' + Date.now() + '.pdf'));
+    return blob;
+  }
+
+  function savePdfToDrive(htmlOutput, folderId, filename) {
+    const folder = folderId
+      ? DriveApp.getFolderById(folderId)
+      : DriveApp.getRootFolder();
+    const blob = toPdf(htmlOutput, filename);
+    const file = folder.createFile(blob);
+    return { id: file.getId(), url: file.getUrl() };
+  }
+
+  return { toPdf, savePdfToDrive };
+})();
