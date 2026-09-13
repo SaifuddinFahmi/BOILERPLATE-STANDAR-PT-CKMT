@@ -1,0 +1,17 @@
+┌─────────────────────────────────────────────────────────────┐
+│  LAYER 1: Library Apps Script (LIB_CKMT_CORE)              │
+│  → Auth, Config, Format, Print, Log, Sheet Helper          │
+│  → Distribusi via Script ID                                 │
+└─────────────────────────────────────────────────────────────┘
+                            ↓ dipakai oleh
+┌─────────────────────────────────────────────────────────────┐
+│  LAYER 2: Template Projects (GitHub)                        │
+│  → template-opname, template-foto, template-generic         │
+│  → Version controlled via clasp                             │
+└─────────────────────────────────────────────────────────────┘
+                            ↓ dikonsumsi oleh
+┌─────────────────────────────────────────────────────────────┐
+│  LAYER 3: Project Aktual (per proyek PT CKMT)               │
+│  → Hanya berisi Business Logic unik                         │
+│  → 80% kode dari Library                                    │
+└─────────────────────────────────────────────────────────────┘
